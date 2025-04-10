@@ -10,6 +10,15 @@ import challengeUtils = require('../lib/challengeUtils')
 
 import * as utils from '../lib/utils'
 const security = require('../lib/insecurity')
+const sanitize = (fileName: string) => {
+  const normalized = path.normalize(fileName).replace(/^(\.\.(\/|\\|$))+/, '');
+  return path.join('ftp/', normalized);
+};
+
+const safePath = sanitize(file);
+if (!fs.existsSync(safePath)) {
+  return res.status(404).send('File not found');
+}
 
 module.exports = function servePublicFiles () {
   return ({ params, query }: Request, res: Response, next: NextFunction) => {
@@ -30,7 +39,7 @@ module.exports = function servePublicFiles () {
       challengeUtils.solveIf(challenges.directoryListingChallenge, () => { return file.toLowerCase() === 'acquisitions.md' })
       verifySuccessfulPoisonNullByteExploit(file)
 
-      res.sendFile(path.resolve('ftp/', file))
+      res.sendFile(safePath)
     } else {
       res.status(403)
       next(new Error('Only .md and .pdf files are allowed!'))
@@ -45,7 +54,7 @@ module.exports = function servePublicFiles () {
 
     challengeUtils.solveIf(challenges.nullByteChallenge, () => {
       return challenges.easterEggLevelOneChallenge.solved || challenges.forgottenDevBackupChallenge.solved || challenges.forgottenBackupChallenge.solved ||
-        challenges.misplacedSignatureFileChallenge.solved || file.toLowerCase() === 'encrypt.pyc'
+          challenges.misplacedSignatureFileChallenge.solved || file.toLowerCase() === 'encrypt.pyc'
     })
   }
 
